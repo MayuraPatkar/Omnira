@@ -16,4 +16,4 @@ def load_model(config, device, model, optimizer):
     else:
         print("No model file found.")
 
-    return model, initial_epoch, global_step
+    return model, optimizer, initial_epoch, global_step

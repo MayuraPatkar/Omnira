@@ -1,31 +1,70 @@
 import torch
 from config import get_config
 from loadmodel import load_model
-from datapipeline import get_ds
+from tokenizer import get_tokenizer
 from model import TCLM
 
 config = get_config()
-_, _, tokenizer = get_ds(config)
+tokenizer = get_tokenizer(config)
 
-model = TCLM(vocab_size=tokenizer.get_vocab_size(),
-             seq_len=config['seq_len'],
-             d_model=config['d_model'],
-             N=config['n_layers'],
-             h=config['head'],
-             dropout=config['dropout'],
-             d_ff=config['d_ff'])
+user_token_id = tokenizer.token_to_id('[USER]')
+bot_token_id = tokenizer.token_to_id('[BOT]')
+
+# Initialize the model
+model = TCLM(
+    vocab_size=tokenizer.get_vocab_size(),
+    seq_len=config['seq_len'],
+    d_model=config['d_model'],
+    N=config['n_layers'],
+    h=config['head'],
+    dropout=config['dropout'],
+    d_ff=config['d_ff']
+)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'], eps=1e-9)
-model, initial_epoch, global_step = load_model(config, config['device'], model, optimizer)
+model, _, _, _ = load_model(config, config['device'], model, optimizer)
+
+conversation_history = []
 
 while True:
-    text = input("text: ")
+    user_input = input("You: ")
 
-    if text == "exit" or text == "":
+    if user_input.lower() == "exit" or user_input == "":
         break
 
-    idx = tokenizer.encode(text).ids
-    idx = torch.tensor([idx]).to(config['device'])
-    generated_sequence = model.generate(idx, max_new_tokens=20, seq_len=config['seq_len'], temperature=config['temperature'], top_k=config['top_k'])
+    conversation_history.append(user_input)
+    input_sequence = [user_token_id]
+    user_input_ids = tokenizer.encode(user_input).ids
+    input_sequence += user_input_ids
+
+    # If conversation history exceeds a certain length, truncate it
+    if len(conversation_history) > 5:  # Adjust the number based on context length needed
+        conversation_history = conversation_history[-5:]
+
+    # Append previous turns to the input sequence
+    for i in range(len(conversation_history)):
+        if i % 2 == 0:  # User turn
+            input_sequence += [user_token_id] + tokenizer.encode(conversation_history[i]).ids
+        else:  # Bot turn
+            input_sequence += [bot_token_id] + tokenizer.encode(conversation_history[i]).ids
+
+    # Convert to tensor and send to device
+    try:
+        input_tensor = torch.tensor([input_sequence]).to(config['device'])
+    except Exception as e:
+        print(f"Error while converting to tensor: {e}")
+        continue
+
+    # Generate response from the model
+    generated_sequence = model.generate(
+        input_tensor,
+        max_new_tokens=20,
+        seq_len=config['seq_len'],
+        temperature=config['temperature'],
+        top_k=config['top_k']
+    )
+
     predicted_text = tokenizer.decode(generated_sequence[0].cpu().numpy())
-    print("predicted:", predicted_text)
+    conversation_history.append(predicted_text)
+
+    print("Omnira:", predicted_text)
