@@ -47,7 +47,6 @@ class MultiTurnChatDataset(Dataset):
         return {
             "input_ids": inputs,
             "labels": labels,
-            "text": conversation,
         }
 
 def get_ds(config):
@@ -69,13 +68,3 @@ def get_ds(config):
     val_dataloader = DataLoader(val_ds, batch_size=1, shuffle=True)
 
     return train_dataloader, val_dataloader, tokenizer
-
-from config import get_config
-
-config = get_config()
-
-tt, _, _ = get_ds(config)
-
-for t in tt:
-    print(t)
-    break
