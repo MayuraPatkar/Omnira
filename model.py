@@ -167,6 +167,7 @@ class TCLM(nn.Module):
 
     def generate(self, idx: torch.Tensor, max_new_tokens: int, seq_len: int, temperature: float = 1.0, top_k: int = 10):
         vocab_size = self.projection_layer.proj.out_features
+        idx_ = torch.empty(0, dtype=torch.int64)
         for _ in range(max_new_tokens):
 
             if idx.size(1) > seq_len:
@@ -188,7 +189,8 @@ class TCLM(nn.Module):
             idx_next = top_k_indices.gather(-1, torch.multinomial(top_k_probs, 1))
 
             idx = torch.cat((idx, idx_next), dim=1)
+            idx_ = torch.cat((idx_, idx_next), dim=1)
 
-        return idx
+        return idx_
 
 

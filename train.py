@@ -26,7 +26,7 @@ def train(config):
     # wandb.watch(model, log="all")
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'], eps=1e-9)
-    model, initial_epoch, global_step = load_model(config, device, model, optimizer)
+    model, optimizer, initial_epoch, global_step = load_model(config, device, model, optimizer)
 
     for epoch in range(initial_epoch, config['num_epochs']):
         torch.cuda.empty_cache()
@@ -36,7 +36,7 @@ def train(config):
         num_batches = len(train_dataloader)
 
         for batch in batch_iterator:
-            encoder_input = batch['inputs'].to(device)
+            encoder_input = batch['input_ids'].to(device)
             targets = batch['labels'].to(device)
 
             optimizer.zero_grad()  # Reset gradients
@@ -79,7 +79,7 @@ def validate(model, val_dataloader, device, epoch):
 
     with torch.no_grad():
         for batch in val_dataloader:
-            encoder_input = batch['inputs'].to(device)
+            encoder_input = batch['input_ids'].to(device)
             targets = batch['labels'].to(device)
             logits, val_loss = model(encoder_input, targets=targets)
             total_val_loss += val_loss.item()

@@ -58,7 +58,7 @@ while True:
     # Generate response from the model
     generated_sequence = model.generate(
         input_tensor,
-        max_new_tokens=20,
+        max_new_tokens=100,
         seq_len=config['seq_len'],
         temperature=config['temperature'],
         top_k=config['top_k']
@@ -66,5 +66,6 @@ while True:
 
     predicted_text = tokenizer.decode(generated_sequence[0].cpu().numpy())
     conversation_history.append(predicted_text)
+    print(conversation_history)
 
     print("Omnira:", predicted_text)
