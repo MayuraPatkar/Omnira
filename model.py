@@ -175,9 +175,8 @@ class TCLM(nn.Module):
             else:
                 idx_crop = idx
 
-            # Forward pass through the model
             logits, _ = self.forward(idx_crop)
-            logits = logits[:, -1, :]  # logits for the last token in the sequence
+            logits = logits[:, -1, :]
 
             logits = logits / temperature
             probs = F.softmax(logits, dim=-1)
